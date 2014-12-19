@@ -9,7 +9,7 @@ To view the slideshow in all of its glory, you have some setup because #javascri
 3. Enter repo `cd e2e-slideshow`
 4. Install dependencies `npm install`
 
-##viewing the slideshow
+##Viewing the slideshow
 
 1. Run the webserver `npm start`
 2. Go to `http://localhost:8080/index.html`
