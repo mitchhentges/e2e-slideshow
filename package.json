@@ -1,0 +1,28 @@
+{
+  "name": "E2ESlideshow",
+  "version": "1.0.0",
+  "description": "Structuring automated end-to-end tests",
+  "main": "server.js",
+  "dependencies": {
+    "connect": "^3.3.3",
+    "serve-static": "^1.7.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:mitchhentges/e2e-slideshow.git"
+  },
+  "keywords": [
+    "protractor"
+  ],
+  "author": "Mitchell Hentges",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mitchhentges/e2e-slideshow/issues"
+  },
+  "homepage": "https://github.com/mitchhentges/e2e-slideshow"
+}

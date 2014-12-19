@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=1024, user-scalable=no">
+
+  <title>Automated E2E Test Structure</title>
+
+  <!-- Required stylesheet -->
+  <link rel="stylesheet" media="screen" href="core/deck.core.css">
+
+  <!-- Extension CSS files go here. Remove or add as needed. -->
+  <link rel="stylesheet" media="screen" href="extensions/goto/deck.goto.css">
+  <link rel="stylesheet" media="screen" href="extensions/menu/deck.menu.css">
+  <link rel="stylesheet" media="screen" href="extensions/navigation/deck.navigation.css">
+  <link rel="stylesheet" media="screen" href="extensions/status/deck.status.css">
+  <link rel="stylesheet" media="screen" href="extensions/scale/deck.scale.css">
+
+  <link rel="stylesheet" media="screen" href="extensions/highlight/styles/tomorrow.css">
+
+  <link rel="stylesheet" media="screen" href="themes/style/swiss.css">
+
+  <!-- Transition theme. More available in /themes/transition/ or create your own. -->
+  <link rel="stylesheet" media="screen" href="themes/transition/horizontal-slide.css">
+
+  <!-- Basic black and white print styles -->
+  <link rel="stylesheet" media="print" href="core/print.css">
+
+  <!-- Required Modernizr file -->
+  <script src="modernizr.custom.js"></script>
+  <script src="extensions/highlight/highlight.pack.js"></script>
+</head>
+<body>
+    <div class="deck-container">
+
+        <!-- Begin slides. Just make elements with a class of slide. -->
+
+        <section class="slide">
+            <h1>Making AutoE2E the Best</h1>
+            <h2>By Mitchell Hentges</h2>
+            <h6>(The best. #1. The best. It's the best)</h6>
+        </section>
+
+        <section class="slide">
+            <h2>Current State</h2>
+            <ul>
+            <li>Page Objects don't abstract elements behind functions</li>
+            <li>Tests directly interact with elements through Page Objects - there's little reuse</li>
+            </ul>
+            <h3>Example - assets.spec.js</h3>
+            <pre><code class="js">var assetsPage = require('assets.po.js');
+//...
+it('should allow an odometer to be set', function() {
+    assetsPage.odometerTractor.sendKeys('123456');
+    expect(assetsPage.nextButton.isEnabled()).toBeTruthy();
+});</code></pre>
+            <h3>Example - assets.po.js</h3>
+            <pre><code class="js">this.odometerTractorField = element(by.model('assetsSelected.one.odometer'));
+this.odometerTrailer1Field = element(by.model('assetsSelected.two.odometer'));
+this.odometerTrailer2Field = element(by.model('assetsSelected.three.odometer'));
+
+this.tractorSelectButton = element(by.model('assetsSelected.one._key'));
+this.trailer1SelectButton = element(by.model('assetsSelected.two._key'));
+this.trailer2SelectButton = element(by.model('assetsSelected.three._key'));
+
+this.get = function get() { ... };</code></pre>
+        </section>
+
+        <section class="slide">
+            <h2>Current State</h2>
+            <img src="images/currentState.png">
+        </section>
+
+        <section class="slide">
+            <h2>Step 1: Page Object functions!</h2>
+            <h4>Changing a page object:</h4>
+            <pre><code>//Before
+this.odometerTractor = element(by.model('assetsSelected.one.odometer'));
+this.odometerTrailer1 = element(by.model('assetsSelected.two.odometer'));
+...</code></pre>
+            <pre><code>//After
+var odometerTractor = element(by.model('assetsSelected.one.odometer'));
+var odometerTrailer1 = element(by.model('assetsSelected.two.odometer'));
+...
+this.clickTractorSelect = function clickTractorSelect() { ... };
+this.setOdometerTractor = function setOdometerTractor(value) { ... };
+this.clickTrailer1Select = function clickTrailer1Select() { ... };
+this.setOdometerTrailer1 = function setOdometerTrailer1(value) { ... };</code></pre>
+        </section>
+
+        <section class="slide">
+            <h4>Changing a test:</h4>
+            <pre><code>//Before
+assetsPage.odometerTractor.sendKeys('12345');
+assetsPage.odometerTrailer1.sendKeys('54321');
+...</code></pre>
+            <pre><code>//After
+assetsPage.setOdometerTractor('12345');
+assetsPage.setOdometerTrailer1('54321');</code></pre>
+        </section>
+
+        <section class="slide">
+            <h3>Why?</h3>
+            <h5>If the page <em>functionality</em> changes:</h5>
+            <ul>
+                <li>Page Object is changed to reflect functionality</li>
+                <li>Specs remain the same</li>
+            </ul>
+            <h3>Example: asset odometer now set via modal</h3>
+            <img src="images/odometerModal.png">
+        </section>
+
+        <section class="slide">
+            <h3>Refactoring before:</h3>
+            <pre><code>//In the test file
+//old: assetsPage.tractorOdometer.sendKeys(12345);
+assetsPage.odometerTractor.click();
+odometerModal.odometerField.sendKeys(12345);
+odometerModal.submit();</code></pre>
+            <p>The above changes are done <em>n</em> times where <em>n</em> is the number of tests</p>
+            <h6>What happens when "find and replace" doesn't get all the situations? We have to manually change the tests</h6>
+        </section>
+
+        <section class="slide">
+            <h3>Refactoring after:</h3>
+            <pre><code>//In the page object file
+//old:
+//this.setOdometerTractor = function setOdometerTractor(value) {
+//  odometerTractor.sendKeys(value);
+//};
+this.setOdometerTractor = function setOdometerTractor(value) {
+    tractorOdometerButton.click();
+    odometerModal.setOdometer(value);
+    odometerField.submit();
+}</code></pre>
+            <p>The above changes are done <em>once.</em></p>
+        </section>
+
+        <section class="slide">
+            <h2>Before:</h2>
+            <img src="images/currentState.png">
+            <h2>After:</h2>
+            <img src="images/step1.png">
+        </section>
+
+        <section class="slide">
+            <h2>Step 2: Inheritance!</h2>
+            <h3>The VC reuses so many structures!</h3>
+            <img src="images/mainScreen.png">
+            <img src="images/mainScreenFrame.png">
+        </section>
+
+        <section class="slide">
+            <h2>Modelling tiles now</h2>
+            <pre><code>function DashboardTile() {
+    var tile = element(by.model('...'));
+    this.open = function open() { ... };
+    this.isPresent = function isPresent() { ... };
+};
+
+function DutyStatusTile() {
+    var tile = element(by.model('...'));
+    this.open = function open() { ... };
+    this.isPresent = function isPresent() { ... };
+};
+
+function MessagingTile() {
+    ...
+};</code></pre>
+            <h3>Each tile has to be written six times</h3>
+            <img src="images/tilesBefore.png">
+        </section>
+
+        <section class="slide">
+            <h2>Modelling tiles later</h2>
+            <pre><code>function Tile() {
+    //this.tile is set in children
+    this.open = function open() { ... };
+    this.isPresent = function isPresent() { ... };
+};
+
+function DashboardTile() {
+    this.tile = element(by.model('...'));
+};
+
+function DutyStatusTile() {
+    this.tile = element(by.model('...'));
+};
+
+function MessagingTile() {
+    ...
+};</code></pre>
+            <h3>Common tile functionality written <em>once</em></h3>
+        </section>
+
+        <section class="slide">
+            <h2>Before:</h2>
+            <img src="images/currentState.png">
+            <h2>After:</h2>
+            <img src="images/step2.png">
+        </section>
+
+        <section class="slide">
+            <h2>Step 3: Other breakdowns</h2>
+            <h3>For example, the AssetsPage</h3>
+            <pre><code>//before, AssetsPage.po.js
+function AssetsPage() {
+    var odometerTractor = element(by.model('assetsSelected.one.odometer'));
+    var odometerTrailer1 = element(by.model('assetsSelected.two.odometer'));
+    var odometerTrailer2 = element(by.model('assetsSelected.three.odometer'));
+
+    var tractorSelectButton = element(by.model('assetsSelected.one._key'));
+    var trailer1SelectButton = element(by.model('assetsSelected.two._key'));
+    var trailer2SelectButton = element(by.model('assetsSelected.three._key'));
+
+    this.setOdometerTractor = function setOdometerTractor(value) { ... };
+    this.setOdometerTrailer1 = function setOdometerTrailer1(value) { ... };
+    this.setOdometerTrailer2 = function setOdometerTrailer2(value) { ... };
+
+    this.clickTractorSelect = function clickTractorSelect() { ... };
+    this.clickTrailer1Select = function clickTrailer1Select() { ... };
+    this.clickTrailer2Select = function clickTrailer2Select() { ... };
+};</code></pre>
+            <pre><code>//before, spec file
+assetsPage.clickTractorSelect();
+assetsPage.setOdometerTractor(12345);</code></pre>
+        </section>
+
+        <section class="slide">
+            <h3>Could be broken down to:</h3>
+            <pre><code>//AssetsPage.po.js
+function AssetsPage() {
+    this.tractor = require('AssetRow.po.js')(0);
+    this.trailer1 = require('AssetRow.po.js')(1);
+    this.trailer2 = require('AssetRow.po.js')(2);
+};</code></pre>
+            <pre><code>//AssetRow.po.js
+function AssetRow(index) {
+    var row = element(by.repeater(...).row(index));
+    this.clickAssetSelect = function clickAssetSelect() { ... };
+    this.setOdometer = function setOdometer() { ... };
+};</code></pre>
+
+            <pre><code>//In the test file
+assetsPage.tractor
+    .clickAssetSelect()
+    .setOdometer(12345);</code></pre>
+        </section>
+
+        <section class="slide">
+            <h3>Again, imagine that odometer is now set via modal</h3>
+            <h4>Making changes only needs to happen in one place:</h4>
+            <pre><code>//AssetRow.po.js
+function AssetRow(index) {
+    //replacing: this.setOdometer = function setOdometer() { ... };
+    this.clickOdometerSelect = function clickOdometerSelect() { ... };
+};</code></pre>
+            <h4>This doesn't need to happen three times</h4>
+        </section>
+
+        <section class="slide">
+            <h2>Before:</h2>
+            <img src="images/currentState.png">
+            <h2>After:</h2>
+            <img src="images/step3.png">
+        </section>
+
+        <section class="slide">
+            <h2>Step 4: The runner!</h2>
+            <h3>Testing logging in as different users:</h3>
+            <pre><code>//In the test file
+assetsPage.clickUserSelection();
+userModal.setFilter('test_driver@arrow.ca')
+    .selectRow(0)
+    .submit();
+assetsPage
+    .setPassword('testing')
+    .submit();
+expect(assetsPage.isPresent()).toBeTruthy();</code></pre>
+            <h4>These six statements are done <em>every time</em> we need to log in</h4>
+        </section>
+
+        <section class="slide">
+            <h3>Should this common functionality be put in a Page Object?</h3>
+            <section class="slide">
+                <h4>No:</h4>
+                <ul>
+                    <li>Page objects are meant for modelling/direct interaction with the page</li>
+                    <li>Knowledge of testing sequences isn't "direct interaction"</li>
+                </ul>
+            </section>
+            <section class="slide">
+                <h3>Is this common functionality put into the test?</h3>
+                <section class="slide">
+                    <h4>No:</h4>
+                    <ul>
+                        <li>What if multiple different tests need to to log in?</li>
+                    </ul>
+                </section>
+            </section>
+        </section>
+
+        <section class="slide">
+            <h3>What about in a "runner" file?</h3>
+            <ul>
+                <li>Multiple tests that need to run the same sequence can "import" this file</li>
+                <li>Knowledge of sequence is not given to the page object (minimal knowledge principal)</li>
+            </ul>
+            <pre><code>//In the test file
+LoginRunner
+    .login('test_driver@arrow.ca', 'testing');
+expect(assetsPage.isPresent()).toBeTruthy();</code></pre>
+            <pre><code>//LoginRunner.po.js
+this.login = function login(username, password) { ... };</code></pre>
+        </section>
+
+        <section class="slide">
+            <h2>Before:</h2>
+            <img src="images/currentState.png">
+            <h2>Final State</h2>
+            <img src="images/step4.png">
+        </section>
+
+        <section class="slide">
+            <h2>Result:</h2>
+            <ul class="slide">
+                <li>Test interacts with two things: page objects and runners</li>
+                <li>Page objects use inheritance to minimize code duplication</li>
+                <li>Page objects contain other, smaller page objects to maximize code reuse</li>
+                <li>Page object functionality abstracted through functions</li>
+            </ul>
+            <img class="slide" src="images/terrific.gif">
+        </section>
+
+        <!-- End slides. -->
+
+        <!-- Begin extension snippets. Add or remove as needed. -->
+
+        <!-- deck.navigation snippet -->
+        <div aria-role="navigation">
+        <a href="#" class="deck-prev-link" title="Previous">&#8592;</a>
+        <a href="#" class="deck-next-link" title="Next">&#8594;</a>
+        </div>
+
+        <!-- deck.status snippet -->
+        <p class="deck-status" aria-role="status">
+        <span class="deck-status-current"></span>
+        /
+        <span class="deck-status-total"></span>
+        </p>
+
+        <!-- deck.goto snippet -->
+        <form action="." method="get" class="goto-form">
+        <label for="goto-slide">Go to slide:</label>
+        <input type="text" name="slidenum" id="goto-slide" list="goto-datalist">
+        <datalist id="goto-datalist"></datalist>
+        <input type="submit" value="Go">
+        </form>
+
+    <!-- End extension snippets. -->
+    </div>
+
+<!-- Required JS files. -->
+<script src="jquery.min.js"></script>
+<script src="core/deck.core.js"></script>
+
+<!-- Extension JS files. Add or remove as needed. -->
+<script src="extensions/menu/deck.menu.js"></script>
+<script src="extensions/goto/deck.goto.js"></script>
+<script src="extensions/status/deck.status.js"></script>
+<script src="extensions/navigation/deck.navigation.js"></script>
+<script src="extensions/scale/deck.scale.js"></script>
+
+<!-- Initialize the deck. You can put this in an external file if desired. -->
+<script>
+  $(function() {
+    $.deck('.slide');
+  });
+  hljs.initHighlightingOnLoad();
+</script>
+</body>
+</html>
